@@ -56,18 +56,23 @@
             background-color: #9DD0D6;
         }
 
-        .clear-btn {
+        .excel-btn {
             padding: 8px 20px;
             font-size: 14px;
             font-weight: bold;
             border: 1px solid #000;
             cursor: pointer;
-            background-color: #FFB6C1;
+            background-color: #90EE90;
             font-family: inherit;
         }
 
-        .clear-btn:hover {
-            background-color: #FFA5B3;
+        .excel-btn:hover {
+            background-color: #7ED87E;
+        }
+
+        .excel-btn:disabled {
+            background-color: #CCCCCC;
+            cursor: not-allowed;
         }
 
         table {
@@ -125,7 +130,7 @@
         <div class="header">
             <button class="back-btn" onclick="window.location.href='main.html'">メニューに戻る</button>
             <div>点呼一覧</div>
-            <button class="clear-btn" onclick="clearAllRecords()">全削除</button>
+            <button class="excel-btn" id="excelBtn" onclick="exportToExcel()">Excel出力</button>
         </div>
         <div class="table-wrapper">
             <div id="recordsList">
@@ -223,11 +228,121 @@
             recordsList.innerHTML = tableHTML;
         }
 
-        function clearAllRecords() {
-            if (confirm('すべての点呼データを削除しますか？')) {
-                localStorage.removeItem('tenkoboRecords');
-                loadRecords();
+        function exportToExcel() {
+            const records = JSON.parse(localStorage.getItem('tenkoboRecords') || '[]');
+            
+            if (records.length === 0) {
+                alert('出力するデータがありません');
+                return;
             }
+
+            // 新しい順にソート
+            records.sort((a, b) => b.id - a.id);
+
+            // CSVヘッダー
+            const headers = [
+                'No',
+                '登録日時',
+                '社員コード',
+                '名前',
+                'ルート番号',
+                '使用車両',
+                '計画時刻（開始）',
+                '計画時刻（終了）',
+                '出勤状況',
+                '点呼時刻',
+                'アルコールチェッカー',
+                'アルコール',
+                '体調',
+                '運行前点検',
+                '日常点検実施',
+                'ODO開始',
+                'ODO終了',
+                '運行状況の確認',
+                '備考'
+            ];
+
+            // CSVデータ行を生成
+            const csvRows = [headers.join(',')];
+
+            records.forEach((record, index) => {
+                const date = new Date(record.createdAt);
+                const dateStr = date.toLocaleString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                // 点呼時刻の表示
+                let rollCallDisplay = '-';
+                if (record.rollCallDateTime) {
+                    const rollCallDate = new Date(record.rollCallDateTime);
+                    rollCallDisplay = rollCallDate.toLocaleString('ja-JP', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } else if (record.rollCallDate && record.rollCallTime) {
+                    rollCallDisplay = `${record.rollCallDate} ${record.rollCallTime}`;
+                } else if (record.rollCallTime) {
+                    rollCallDisplay = record.rollCallTime;
+                }
+
+                // CSV用に値をエスケープ（カンマや改行を含む場合）
+                function escapeCsvValue(value) {
+                    if (value === null || value === undefined) return '';
+                    const str = String(value);
+                    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                        return '"' + str.replace(/"/g, '""') + '"';
+                    }
+                    return str;
+                }
+
+                const row = [
+                    records.length - index,
+                    dateStr,
+                    escapeCsvValue(record.employeeCode || ''),
+                    escapeCsvValue(record.name || ''),
+                    escapeCsvValue(record.routeNumber || ''),
+                    escapeCsvValue(record.vehicle || ''),
+                    escapeCsvValue(record.plannedTimeStart || ''),
+                    escapeCsvValue(record.plannedTimeEnd || ''),
+                    escapeCsvValue(record.attendanceStatus || ''),
+                    escapeCsvValue(rollCallDisplay),
+                    escapeCsvValue(record.alcoholChecker || ''),
+                    escapeCsvValue(record.alcohol || ''),
+                    escapeCsvValue(record.health || ''),
+                    escapeCsvValue(record.preInspection || ''),
+                    escapeCsvValue(record.dailyInspection || ''),
+                    escapeCsvValue(record.odoStart || ''),
+                    escapeCsvValue(record.odoEnd || ''),
+                    escapeCsvValue(record.operationStatus || ''),
+                    escapeCsvValue(record.remarks || '')
+                ];
+                csvRows.push(row.join(','));
+            });
+
+            // BOM付きUTF-8でCSVを作成
+            const csvContent = '\uFEFF' + csvRows.join('\n');
+            
+            // ファイル名に日時を含める
+            const now = new Date();
+            const fileName = `点呼一覧_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.csv`;
+
+            // Blobを作成してダウンロード
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', fileName);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         // ページ読み込み時にレコードを表示
