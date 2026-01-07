@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>点呼画面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "MS Gothic", "Osaka-Mono", monospace;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            border: 2px solid #000;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            border: 1px solid #000;
+            padding: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            min-height: 30px;
+        }
+
+        .label {
+            width: 120px;
+            font-size: 14px;
+        }
+
+        .input-box {
+            height: 25px;
+            border: 1px solid #000;
+            padding: 0 5px;
+            display: flex;
+            align-items: center;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="time"],
+        input[type="datetime-local"],
+        input[type="number"],
+        select {
+            border: 1px solid #000;
+            padding: 0 5px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        textarea {
+            border: 1px solid #000;
+            padding: 5px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        .input-yellow {
+            background-color: #FFD700;
+            width: 80px;
+        }
+
+        .input-yellow-long {
+            background-color: #FFFF00;
+            width: 250px;
+        }
+
+        .input-yellow-medium {
+            background-color: #FFD700;
+            width: 120px;
+        }
+
+        .checkbox-red {
+            width: 80px;
+            background-color: #DC143C;
+            color: white;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .checkbox-section {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .checkbox-item input[type="checkbox"],
+        .checkbox-item input[type="radio"] {
+            width: 15px;
+            height: 15px;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            cursor: pointer;
+        }
+
+        .text-small {
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .meter-box {
+            background-color: #FFD700;
+            width: 100px;
+            height: 25px;
+            border: 1px solid #000;
+            display: inline-block;
+        }
+
+        .meter-label {
+            margin-left: 10px;
+            font-size: 12px;
+        }
+
+        .input-wide {
+            background-color: #FFD700;
+            width: 400px;
+            height: 25px;
+            border: 1px solid #000;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 12px 60px;
+            font-size: 16px;
+            font-weight: bold;
+            border: 1px solid #000;
+            cursor: pointer;
+        }
+
+        .btn-cancel {
+            background-color: #B0E0E6;
+        }
+
+        .btn-confirm {
+            background-color: #87CEEB;
+        }
+
+        .status-buttons {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        .status-btn {
+            width: 60px;
+            height: 60px;
+            border: 1px solid #000;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .status-started {
+            background-color: #B0E0E6;
+        }
+
+        .status-ended {
+            background-color: #FFD700;
+        }
+
+        .header-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header-title {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-row">
+            <div class="header header-title">点呼画面</div>
+            <div class="status-buttons">
+                <button class="status-btn status-started">始業<br>済</button>
+                <button class="status-btn status-ended">終業<br>未</button>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="label">社員コード</div>
+            <input type="text" id="employee-code" class="input-box input-yellow">
+        </div>
+
+        <div class="row">
+            <div class="label">名前</div>
+            <input type="text" id="name" class="input-box input-yellow-long">
+        </div>
+
+        <div class="row">
+            <div class="label">ルート番号</div>
+            <input type="text" id="route-number" class="input-box input-yellow-medium">
+        </div>
+
+        <div class="row">
+            <div class="label">使用車両</div>
+            <input type="text" id="vehicle" class="input-box input-yellow-medium">
+        </div>
+
+        <div class="row">
+            <div class="label">計画時刻</div>
+            <input type="time" id="planned-time-start" class="input-box input-yellow-medium">  　～
+            <input type="time" id="planned-time-end" class="input-box input-yellow-medium" style="margin-left: 10px;">
+        </div>
+
+        <div class="row">
+            <div class="label">出勤状況</div>
+            <select id="attendance-status" class="input-box input-yellow-medium">
+                <option value="出勤" selected>出勤</option>
+                <option value="欠勤">欠勤</option>
+                <option value="早退">早退</option>
+                <option value="その他">その他</option>
+            </select>
+        </div>
+
+        <div class="row">
+            <div class="label">点呼時刻</div>
+            <input type="date" id="roll-call-date" class="input-box input-yellow-medium">
+            <input type="time" id="roll-call-time" class="input-box input-yellow-medium" style="margin-left: 10px;">
+        </div>
+
+        <div class="row">
+            <div class="label">アルコールチェッカー</div>
+            <div class="checkbox-section">
+                <label class="checkbox-item">
+                    <input type="radio" name="alcohol-checker" value="あり" checked>
+                    <div class="checkbox-red">あり</div>
+                </label>
+                <label class="checkbox-item">
+                    <input type="radio" name="alcohol-checker" value="なし">
+                    <div class="checkbox-red">なし</div>
+                </label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="label">アルコール</div>
+            <div class="checkbox-section">
+                <label class="checkbox-item">
+                    <input type="radio" name="alcohol" value="あり">
+                    <div class="checkbox-red">あり</div>
+                </label>
+                <label class="checkbox-item">
+                    <input type="radio" name="alcohol" value="なし" checked>
+                    <div class="checkbox-red">なし</div>
+                </label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="label">体調</div>
+            <div class="checkbox-section">
+                <label class="checkbox-item">
+                    <input type="radio" name="health" value="良好" checked>
+                    <div class="checkbox-red">良好</div>
+                </label>
+                <label class="checkbox-item">
+                    <input type="radio" name="health" value="不調">
+                    <div class="checkbox-red">不調</div>
+                </label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="label">運行前点検</div>
+            <div class="checkbox-section">
+                <label class="checkbox-item">
+                    <input type="radio" name="pre-inspection" value="あり" checked>
+                    <div class="checkbox-red">あり</div>
+                </label>
+                <label class="checkbox-item">
+                    <input type="radio" name="pre-inspection" value="なし">
+                    <div class="checkbox-red">なし</div>
+                </label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="label">日常点検実施</div>
+            <div class="checkbox-section">
+                <label class="checkbox-item">
+                    <input type="radio" name="daily-inspection" value="あり" checked>
+                    <div class="checkbox-red">あり</div>
+                </label>
+                <label class="checkbox-item">
+                    <input type="radio" name="daily-inspection" value="なし">
+                    <div class="checkbox-red">なし</div>
+                </label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="label">走行距離</div>
+            <div style="margin-left: 10px;">ODOメーター</div>
+            <input type="number" id="odo-start" class="meter-box" style="margin-left: 10px;" placeholder="開始">   　～
+            <input type="number" id="odo-end" class="meter-box" style="margin-left: 50px;" placeholder="終了">
+            <span class="meter-label">km</span>
+        </div>
+
+        <div class="row">
+            <div class="label">運行状況の確認</div>
+            <textarea id="operation-status" class="input-wide" rows="3" placeholder="運行状況を入力してください"></textarea>
+        </div>
+
+        <div class="row">
+            <div class="label">備考</div>
+            <textarea id="remarks" class="input-wide" rows="3" placeholder="備考を入力してください"></textarea>
+        </div>
+
+        <div class="buttons">
+            <button class="btn btn-cancel" onclick="window.location.href='main.html'">キャンセル</button>
+            <button class="btn btn-confirm" onclick="saveData()">確定</button>
+        </div>
+    </div>
+    <script>
+        function saveData() {
+            // ラジオボタンの値を取得する関数
+            function getRadioValue(name) {
+                const radio = document.querySelector(`input[name="${name}"]:checked`);
+                return radio ? radio.value : '';
+            }
+
+            // フォームデータを収集
+            const data = {
+                id: Date.now(), // 一意のIDとしてタイムスタンプを使用
+                employeeCode: document.getElementById('employee-code').value,
+                name: document.getElementById('name').value,
+                routeNumber: document.getElementById('route-number').value,
+                vehicle: document.getElementById('vehicle').value,
+                plannedTimeStart: document.getElementById('planned-time-start').value,
+                plannedTimeEnd: document.getElementById('planned-time-end').value,
+                attendanceStatus: document.getElementById('attendance-status').value,
+                rollCallDate: document.getElementById('roll-call-date').value,
+                rollCallTime: document.getElementById('roll-call-time').value,
+                rollCallDateTime: document.getElementById('roll-call-date').value && document.getElementById('roll-call-time').value 
+                    ? `${document.getElementById('roll-call-date').value}T${document.getElementById('roll-call-time').value}` 
+                    : '',
+                alcoholChecker: getRadioValue('alcohol-checker'),
+                alcohol: getRadioValue('alcohol'),
+                health: getRadioValue('health'),
+                preInspection: getRadioValue('pre-inspection'),
+                dailyInspection: getRadioValue('daily-inspection'),
+                odoStart: document.getElementById('odo-start').value,
+                odoEnd: document.getElementById('odo-end').value,
+                operationStatus: document.getElementById('operation-status').value,
+                remarks: document.getElementById('remarks').value,
+                createdAt: new Date().toISOString()
+            };
+
+            // LocalStorageから既存のデータを取得
+            let records = JSON.parse(localStorage.getItem('tenkoboRecords') || '[]');
+            
+            // 新しいデータを追加
+            records.push(data);
+            
+            // LocalStorageに保存
+            localStorage.setItem('tenkoboRecords', JSON.stringify(records));
+            
+            // result.htmlに遷移
+            window.location.href = 'result.html';
+        }
+
+        // ページ読み込み時に今日の日付を設定
+        window.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const todayStr = `${year}-${month}-${day}`;
+            document.getElementById('roll-call-date').value = todayStr;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>点呼一覧</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "MS Gothic", "Osaka-Mono", monospace;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background-color: white;
+            border: 2px solid #000;
+            padding: 20px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+
+        .header {
+            text-align: center;
+            border: 1px solid #000;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .back-btn {
+            padding: 8px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border: 1px solid #000;
+            cursor: pointer;
+            background-color: #B0E0E6;
+            font-family: inherit;
+        }
+
+        .back-btn:hover {
+            background-color: #9DD0D6;
+        }
+
+        .clear-btn {
+            padding: 8px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            border: 1px solid #000;
+            cursor: pointer;
+            background-color: #FFB6C1;
+            font-family: inherit;
+        }
+
+        .clear-btn:hover {
+            background-color: #FFA5B3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            background-color: white;
+        }
+
+        th {
+            background-color: #D3D3D3;
+            border: 1px solid #000;
+            padding: 8px 5px;
+            text-align: center;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        td {
+            border: 1px solid #000;
+            padding: 6px 5px;
+            text-align: left;
+            word-break: break-word;
+            max-width: 150px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #F5F5F5;
+        }
+
+        tr:hover {
+            background-color: #E6F3FF;
+        }
+
+        .no-records {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+
+        .no-records {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="back-btn" onclick="window.location.href='main.html'">メニューに戻る</button>
+            <div>点呼一覧</div>
+            <button class="clear-btn" onclick="clearAllRecords()">全削除</button>
+        </div>
+        <div class="table-wrapper">
+            <div id="recordsList">
+                <!-- テーブルがここに表示されます -->
+            </div>
+        </div>
+    </div>
+    <script>
+        function loadRecords() {
+            const records = JSON.parse(localStorage.getItem('tenkoboRecords') || '[]');
+            const recordsList = document.getElementById('recordsList');
+
+            if (records.length === 0) {
+                recordsList.innerHTML = '<div class="no-records">点呼データがありません</div>';
+                return;
+            }
+
+            // 新しい順にソート
+            records.sort((a, b) => b.id - a.id);
+
+            // テーブルヘッダー
+            let tableHTML = '<table><thead><tr>';
+            tableHTML += '<th>No</th>';
+            tableHTML += '<th>登録日時</th>';
+            tableHTML += '<th>社員コード</th>';
+            tableHTML += '<th>名前</th>';
+            tableHTML += '<th>ルート番号</th>';
+            tableHTML += '<th>使用車両</th>';
+            tableHTML += '<th>計画時刻（開始）</th>';
+            tableHTML += '<th>計画時刻（終了）</th>';
+            tableHTML += '<th>出勤状況</th>';
+            tableHTML += '<th>点呼時刻</th>';
+            tableHTML += '<th>アルコールチェッカー</th>';
+            tableHTML += '<th>アルコール</th>';
+            tableHTML += '<th>体調</th>';
+            tableHTML += '<th>運行前点検</th>';
+            tableHTML += '<th>日常点検実施</th>';
+            tableHTML += '<th>ODO開始</th>';
+            tableHTML += '<th>ODO終了</th>';
+            tableHTML += '<th>運行状況の確認</th>';
+            tableHTML += '<th>備考</th>';
+            tableHTML += '</tr></thead><tbody>';
+
+            // テーブルデータ
+            records.forEach((record, index) => {
+                const date = new Date(record.createdAt);
+                const dateStr = date.toLocaleString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                tableHTML += '<tr>';
+                tableHTML += `<td>${records.length - index}</td>`;
+                tableHTML += `<td>${dateStr}</td>`;
+                tableHTML += `<td>${record.employeeCode || '-'}</td>`;
+                tableHTML += `<td>${record.name || '-'}</td>`;
+                tableHTML += `<td>${record.routeNumber || '-'}</td>`;
+                tableHTML += `<td>${record.vehicle || '-'}</td>`;
+                tableHTML += `<td>${record.plannedTimeStart || '-'}</td>`;
+                tableHTML += `<td>${record.plannedTimeEnd || '-'}</td>`;
+                tableHTML += `<td>${record.attendanceStatus || '-'}</td>`;
+                // 点呼時刻の表示（日付と時刻を結合）
+                let rollCallDisplay = '-';
+                if (record.rollCallDateTime) {
+                    const rollCallDate = new Date(record.rollCallDateTime);
+                    rollCallDisplay = rollCallDate.toLocaleString('ja-JP', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } else if (record.rollCallDate && record.rollCallTime) {
+                    rollCallDisplay = `${record.rollCallDate} ${record.rollCallTime}`;
+                } else if (record.rollCallTime) {
+                    rollCallDisplay = record.rollCallTime;
+                }
+                tableHTML += `<td>${rollCallDisplay}</td>`;
+                tableHTML += `<td>${record.alcoholChecker || '-'}</td>`;
+                tableHTML += `<td>${record.alcohol || '-'}</td>`;
+                tableHTML += `<td>${record.health || '-'}</td>`;
+                tableHTML += `<td>${record.preInspection || '-'}</td>`;
+                tableHTML += `<td>${record.dailyInspection || '-'}</td>`;
+                tableHTML += `<td>${record.odoStart || '-'}</td>`;
+                tableHTML += `<td>${record.odoEnd || '-'}</td>`;
+                tableHTML += `<td>${record.operationStatus || '-'}</td>`;
+                tableHTML += `<td>${record.remarks || '-'}</td>`;
+                tableHTML += '</tr>';
+            });
+
+            tableHTML += '</tbody></table>';
+            recordsList.innerHTML = tableHTML;
+        }
+
+        function clearAllRecords() {
+            if (confirm('すべての点呼データを削除しますか？')) {
+                localStorage.removeItem('tenkoboRecords');
+                loadRecords();
+            }
+        }
+
+        // ページ読み込み時にレコードを表示
+        loadRecords();
+    </script>
+</body>
+</html>
