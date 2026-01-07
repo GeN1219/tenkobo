@@ -173,29 +173,6 @@
             background-color: #87CEEB;
         }
 
-        .status-buttons {
-            display: flex;
-            gap: 10px;
-            margin-left: auto;
-        }
-
-        .status-btn {
-            width: 60px;
-            height: 60px;
-            border: 1px solid #000;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .status-started {
-            background-color: #B0E0E6;
-        }
-
-        .status-ended {
-            background-color: #FFD700;
-        }
-
         .header-row {
             display: flex;
             align-items: center;
@@ -204,17 +181,32 @@
 
         .header-title {
             flex: 1;
+            text-align: center;
+        }
+
+        .work-status-box {
+            width: 80px;
+            height: 40px;
+            border: 2px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #B0E0E6;
+            margin-right: 10px;
+        }
+
+        .work-status-box.ended {
+            background-color: #FFD700;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header-row">
+            <div id="workStatusBox" class="work-status-box" onclick="toggleWorkStatus()">始業</div>
             <div class="header header-title">点呼画面</div>
-            <div class="status-buttons">
-                <button class="status-btn status-started">始業<br>済</button>
-                <button class="status-btn status-ended">終業<br>未</button>
-            </div>
         </div>
 
         <div class="row">
@@ -235,6 +227,14 @@
         <div class="row">
             <div class="label">使用車両</div>
             <input type="text" id="vehicle" class="input-box input-yellow-medium">
+        </div>
+
+        <div class="row">
+            <div class="label">走行距離</div>
+            <div style="margin-left: 10px;">ODOメーター</div>
+            <input type="number" id="odo-start" class="meter-box" style="margin-left: 10px;" placeholder="開始">   　～
+            <input type="number" id="odo-end" class="meter-box" style="margin-left: 50px;" placeholder="終了">
+            <span class="meter-label">km</span>
         </div>
 
         <div class="row">
@@ -330,14 +330,6 @@
         </div>
 
         <div class="row">
-            <div class="label">走行距離</div>
-            <div style="margin-left: 10px;">ODOメーター</div>
-            <input type="number" id="odo-start" class="meter-box" style="margin-left: 10px;" placeholder="開始">   　～
-            <input type="number" id="odo-end" class="meter-box" style="margin-left: 50px;" placeholder="終了">
-            <span class="meter-label">km</span>
-        </div>
-
-        <div class="row">
             <div class="label">運行状況の確認</div>
             <textarea id="operation-status" class="input-wide" rows="3" placeholder="運行状況を入力してください"></textarea>
         </div>
@@ -400,7 +392,29 @@
             window.location.href = 'result.html';
         }
 
-        // ページ読み込み時に今日の日付を設定
+        function setWorkStatus(status) {
+            const box = document.getElementById('workStatusBox');
+            if (!box) return;
+            if (status === 'start') {
+                box.classList.remove('ended');
+                box.textContent = '始業';
+            } else {
+                box.classList.add('ended');
+                box.textContent = '終業';
+            }
+        }
+
+        function toggleWorkStatus() {
+            const box = document.getElementById('workStatusBox');
+            if (!box) return;
+            if (box.classList.contains('ended')) {
+                setWorkStatus('start');
+            } else {
+                setWorkStatus('end');
+            }
+        }
+
+        // ページ読み込み時の初期設定
         window.addEventListener('DOMContentLoaded', function() {
             const today = new Date();
             const year = today.getFullYear();
@@ -408,6 +422,15 @@
             const day = String(today.getDate()).padStart(2, '0');
             const todayStr = `${year}-${month}-${day}`;
             document.getElementById('roll-call-date').value = todayStr;
+
+            // 始業／終業ボックスの初期状態を時間帯で決定（日本時間 0:00-11:59 → 始業, 12:00-23:59 → 終業）
+            const now = new Date();
+            const hour = now.getHours(); // ブラウザのローカル時間（日本で開けば日本時間）
+            if (hour < 12) {
+                setWorkStatus('start');
+            } else {
+                setWorkStatus('end');
+            }
         });
     </script>
 </body>
