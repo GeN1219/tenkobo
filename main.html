@@ -19,6 +19,7 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            position: relative;
         }
 
         .container {
@@ -63,6 +64,28 @@
         .menu-btn:active {
             background-color: #5AA5C5;
         }
+
+        .master-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border: 2px solid #000;
+            cursor: pointer;
+            background-color: #FFD700;
+            font-family: inherit;
+            transition: background-color 0.2s;
+        }
+
+        .master-btn:hover {
+            background-color: #FFC700;
+        }
+
+        .master-btn:active {
+            background-color: #FFB700;
+        }
     </style>
 </head>
 <body>
@@ -73,5 +96,6 @@
             <button class="menu-btn" onclick="window.location.href='result.html'">一覧を見る</button>
         </div>
     </div>
+    <button class="master-btn" onclick="window.location.href='master.html'">マスタ管理</button>
 </body>
 </html>

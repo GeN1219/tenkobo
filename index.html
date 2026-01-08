@@ -41,8 +41,9 @@
         }
 
         .label {
-            width: 120px;
+            width: 140px;
             font-size: 14px;
+            white-space: nowrap;
         }
 
         .input-box {
@@ -173,6 +174,31 @@
             background-color: #87CEEB;
         }
 
+        .summary-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .summary-text {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .not-done-highlight {
+            color: #B22222;
+        }
+
+        .current-date {
+            font-size: 13px;
+            text-align: right;
+            margin-bottom: 10px;
+        }
+
         .header-row {
             display: flex;
             align-items: center;
@@ -200,14 +226,41 @@
         .work-status-box.ended {
             background-color: #FFD700;
         }
+
+        .success-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #90EE90;
+            border: 3px solid #000;
+            padding: 30px 50px;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <div id="successMessage" class="success-message">
+        保存しました！
+    </div>
+
     <div class="container">
+        <div class="summary-bar">
+            <div class="summary-text">
+                <span>点呼予定人数：<span id="planned-total">20</span>人</span>
+                <span>点呼完了人数：<span id="completed-total">13</span>人</span>
+                <span class="not-done-highlight">未実施人数：<span id="not-done-total">7</span>人</span>
+            </div>
+        </div>
         <div class="header-row">
             <div id="workStatusBox" class="work-status-box" onclick="toggleWorkStatus()">始業</div>
             <div class="header header-title">点呼画面</div>
         </div>
+        <div class="current-date" id="current-date"></div>
 
         <div class="row">
             <div class="label">社員コード</div>
@@ -339,6 +392,26 @@
             <textarea id="remarks" class="input-wide" rows="3" placeholder="備考を入力してください"></textarea>
         </div>
 
+        <div class="row">
+            <div class="label">3点セット確認</div>
+            <div class="checkbox-section">
+                <label class="checkbox-item">
+                    <input type="checkbox" id="check-3set" value="OK">
+                    <div class="checkbox-red">OK</div>
+                </label>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="label">LogiStar時間外確認</div>
+            <div class="checkbox-section">
+                <label class="checkbox-item">
+                    <input type="checkbox" id="check-logistar" value="OK">
+                    <div class="checkbox-red">OK</div>
+                </label>
+            </div>
+        </div>
+
         <div class="buttons">
             <button class="btn btn-cancel" onclick="window.location.href='main.html'">キャンセル</button>
             <button class="btn btn-confirm" onclick="saveData()">確定</button>
@@ -354,7 +427,7 @@
 
             // フォームデータを収集
             const data = {
-                id: Date.now(), // 一意のIDとしてタイムスタンプを使用
+                id: Date.now(),
                 employeeCode: document.getElementById('employee-code').value,
                 name: document.getElementById('name').value,
                 routeNumber: document.getElementById('route-number').value,
@@ -376,6 +449,8 @@
                 odoEnd: document.getElementById('odo-end').value,
                 operationStatus: document.getElementById('operation-status').value,
                 remarks: document.getElementById('remarks').value,
+                check3set: document.getElementById('check-3set').checked ? 'OK' : '',
+                checkLogistar: document.getElementById('check-logistar').checked ? 'OK' : '',
                 createdAt: new Date().toISOString()
             };
 
@@ -388,8 +463,59 @@
             // LocalStorageに保存
             localStorage.setItem('tenkoboRecords', JSON.stringify(records));
             
-            // result.htmlに遷移
-            window.location.href = 'result.html';
+            // 成功メッセージを表示
+            showSuccessMessage();
+            
+            // フォームをリセット
+            resetForm();
+        }
+
+        function showSuccessMessage() {
+            const message = document.getElementById('successMessage');
+            message.style.display = 'block';
+            
+            setTimeout(() => {
+                message.style.display = 'none';
+            }, 1500);
+        }
+
+        function resetForm() {
+            // テキスト入力をクリア
+            document.getElementById('employee-code').value = '';
+            document.getElementById('name').value = '';
+            document.getElementById('route-number').value = '';
+            document.getElementById('vehicle').value = '';
+            document.getElementById('odo-start').value = '';
+            document.getElementById('odo-end').value = '';
+            document.getElementById('planned-time-start').value = '';
+            document.getElementById('planned-time-end').value = '';
+            document.getElementById('operation-status').value = '';
+            document.getElementById('remarks').value = '';
+            
+            // セレクトボックスをデフォルトに
+            document.getElementById('attendance-status').value = '出勤';
+            
+            // 点呼時刻は今日の日付を保持
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            document.getElementById('roll-call-date').value = `${year}-${month}-${day}`;
+            document.getElementById('roll-call-time').value = '';
+            
+            // ラジオボタンをデフォルトに
+            document.querySelector('input[name="alcohol-checker"][value="あり"]').checked = true;
+            document.querySelector('input[name="alcohol"][value="なし"]').checked = true;
+            document.querySelector('input[name="health"][value="良好"]').checked = true;
+            document.querySelector('input[name="pre-inspection"][value="あり"]').checked = true;
+            document.querySelector('input[name="daily-inspection"][value="あり"]').checked = true;
+            
+            // チェックボックスをクリア
+            document.getElementById('check-3set').checked = false;
+            document.getElementById('check-logistar').checked = false;
+            
+            // 社員コード入力欄にフォーカス
+            document.getElementById('employee-code').focus();
         }
 
         function setWorkStatus(status) {
@@ -423,15 +549,70 @@
             const todayStr = `${year}-${month}-${day}`;
             document.getElementById('roll-call-date').value = todayStr;
 
+            // 画面上部の日付表示（例：2025年1月8日）
+            const currentDateEl = document.getElementById('current-date');
+            if (currentDateEl) {
+                currentDateEl.textContent = `${year}年${Number(month)}月${Number(day)}日`;
+            }
+
             // 始業／終業ボックスの初期状態を時間帯で決定（日本時間 0:00-11:59 → 始業, 12:00-23:59 → 終業）
             const now = new Date();
-            const hour = now.getHours(); // ブラウザのローカル時間（日本で開けば日本時間）
+            const hour = now.getHours();
             if (hour < 12) {
                 setWorkStatus('start');
             } else {
                 setWorkStatus('end');
             }
+
+            // 社員コード入力時のマスタ自動補完
+            const empInput = document.getElementById('employee-code');
+            if (empInput) {
+                empInput.addEventListener('change', autoFillFromMaster);
+                empInput.addEventListener('blur', autoFillFromMaster);
+                empInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        autoFillFromMaster();
+                    }
+                });
+            }
         });
+
+        function loadMasterData() {
+            try {
+                const stored = localStorage.getItem('tenkoboMaster');
+                if (!stored) return [];
+                const parsed = JSON.parse(stored);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function autoFillFromMaster() {
+            const codeInput = document.getElementById('employee-code');
+            if (!codeInput) return;
+            const code = codeInput.value.trim();
+            if (!code) return;
+
+            const master = loadMasterData();
+            const hit = master.find(m => String(m.employeeCode) === code);
+            if (!hit) {
+                return;
+            }
+
+            const setValue = (id, value) => {
+                const el = document.getElementById(id);
+                if (el && value != null) {
+                    el.value = value;
+                }
+            };
+
+            setValue('name', hit.name || '');
+            setValue('route-number', hit.routeNumber || '');
+            setValue('vehicle', hit.vehicle || '');
+            setValue('planned-time-start', hit.plannedTimeStart || '');
+            setValue('planned-time-end', hit.plannedTimeEnd || '');
+        }
     </script>
 </body>
 </html>

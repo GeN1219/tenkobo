@@ -75,6 +75,41 @@
             cursor: not-allowed;
         }
 
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .search-label {
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .search-input {
+            padding: 6px 8px;
+            font-size: 14px;
+            border: 1px solid #000;
+            width: 200px;
+        }
+
+        .search-btn {
+            padding: 6px 14px;
+            font-size: 14px;
+            font-weight: bold;
+            border: 1px solid #000;
+            cursor: pointer;
+            background-color: #B0E0E6;
+            font-family: inherit;
+        }
+
+        .search-btn:hover {
+            background-color: #9DD0D6;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -100,6 +135,23 @@
             text-align: left;
             word-break: break-word;
             max-width: 150px;
+        }
+
+        .alcohol-checker-col {
+            min-width: 140px;
+            white-space: nowrap;
+        }
+
+        .name-col {
+            min-width: 160px;
+            max-width: none;
+            white-space: normal;
+        }
+
+        .remarks-col {
+            min-width: 260px;
+            max-width: none;
+            white-space: normal;
         }
 
         tr:nth-child(even) {
@@ -132,6 +184,11 @@
             <div>点呼一覧</div>
             <button class="excel-btn" id="excelBtn" onclick="exportToExcel()">Excel出力</button>
         </div>
+        <div class="search-bar">
+            <span class="search-label">社員コード検索:</span>
+            <input id="searchEmployeeCode" class="search-input" type="text" placeholder="例: 12345">
+            <button class="search-btn" onclick="searchRecords()">検索</button>
+        </div>
         <div class="table-wrapper">
             <div id="recordsList">
                 <!-- テーブルがここに表示されます -->
@@ -139,31 +196,37 @@
         </div>
     </div>
     <script>
-        function loadRecords() {
+        function loadRecords(searchCode = '') {
             const records = JSON.parse(localStorage.getItem('tenkoboRecords') || '[]');
             const recordsList = document.getElementById('recordsList');
 
-            if (records.length === 0) {
-                recordsList.innerHTML = '<div class="no-records">点呼データがありません</div>';
+            // フィルタ処理（社員コードで部分一致）
+            const filtered = searchCode
+                ? records.filter(r => (r.employeeCode || '').includes(searchCode))
+                : records;
+
+            if (filtered.length === 0) {
+                recordsList.innerHTML = '<div class="no-records">該当する点呼データがありません</div>';
                 return;
             }
 
             // 新しい順にソート
-            records.sort((a, b) => b.id - a.id);
+            filtered.sort((a, b) => b.id - a.id);
 
             // テーブルヘッダー
             let tableHTML = '<table><thead><tr>';
+            tableHTML += '<th>修正</th>';
             tableHTML += '<th>No</th>';
             tableHTML += '<th>登録日時</th>';
             tableHTML += '<th>社員コード</th>';
-            tableHTML += '<th>名前</th>';
+            tableHTML += '<th class="name-col">名前</th>';
             tableHTML += '<th>ルート番号</th>';
             tableHTML += '<th>使用車両</th>';
             tableHTML += '<th>計画時刻（開始）</th>';
             tableHTML += '<th>計画時刻（終了）</th>';
             tableHTML += '<th>出勤状況</th>';
             tableHTML += '<th>点呼時刻</th>';
-            tableHTML += '<th>アルコールチェッカー</th>';
+            tableHTML += '<th class="alcohol-checker-col">アルコールチェッカー</th>';
             tableHTML += '<th>アルコール</th>';
             tableHTML += '<th>体調</th>';
             tableHTML += '<th>運行前点検</th>';
@@ -171,11 +234,11 @@
             tableHTML += '<th>ODO開始</th>';
             tableHTML += '<th>ODO終了</th>';
             tableHTML += '<th>運行状況の確認</th>';
-            tableHTML += '<th>備考</th>';
+            tableHTML += '<th class="remarks-col">備考</th>';
             tableHTML += '</tr></thead><tbody>';
 
             // テーブルデータ
-            records.forEach((record, index) => {
+            filtered.forEach((record, index) => {
                 const date = new Date(record.createdAt);
                 const dateStr = date.toLocaleString('ja-JP', {
                     year: 'numeric',
@@ -186,10 +249,11 @@
                 });
 
                 tableHTML += '<tr>';
-                tableHTML += `<td>${records.length - index}</td>`;
+                tableHTML += `<td><button class="search-btn" onclick="editRecord(${record.id})">修正</button></td>`;
+                tableHTML += `<td>${filtered.length - index}</td>`;
                 tableHTML += `<td>${dateStr}</td>`;
                 tableHTML += `<td>${record.employeeCode || '-'}</td>`;
-                tableHTML += `<td>${record.name || '-'}</td>`;
+                tableHTML += `<td class="name-col">${record.name || '-'}</td>`;
                 tableHTML += `<td>${record.routeNumber || '-'}</td>`;
                 tableHTML += `<td>${record.vehicle || '-'}</td>`;
                 tableHTML += `<td>${record.plannedTimeStart || '-'}</td>`;
@@ -212,7 +276,7 @@
                     rollCallDisplay = record.rollCallTime;
                 }
                 tableHTML += `<td>${rollCallDisplay}</td>`;
-                tableHTML += `<td>${record.alcoholChecker || '-'}</td>`;
+                tableHTML += `<td class="alcohol-checker-col">${record.alcoholChecker || '-'}</td>`;
                 tableHTML += `<td>${record.alcohol || '-'}</td>`;
                 tableHTML += `<td>${record.health || '-'}</td>`;
                 tableHTML += `<td>${record.preInspection || '-'}</td>`;
@@ -220,13 +284,39 @@
                 tableHTML += `<td>${record.odoStart || '-'}</td>`;
                 tableHTML += `<td>${record.odoEnd || '-'}</td>`;
                 tableHTML += `<td>${record.operationStatus || '-'}</td>`;
-                tableHTML += `<td>${record.remarks || '-'}</td>`;
+                tableHTML += `<td class="remarks-col">${record.remarks || '-'}</td>`;
                 tableHTML += '</tr>';
             });
 
             tableHTML += '</tbody></table>';
             recordsList.innerHTML = tableHTML;
         }
+
+        function searchRecords() {
+            const code = document.getElementById('searchEmployeeCode').value.trim();
+            loadRecords(code);
+        }
+
+        function editRecord(id) {
+            const records = JSON.parse(localStorage.getItem('tenkoboRecords') || '[]');
+            const target = records.find(r => r.id === id);
+            if (!target) {
+                alert('対象データが見つかりません');
+                return;
+            }
+            localStorage.setItem('tenkoboEditingRecord', JSON.stringify(target));
+            window.location.href = 'index.html';
+        }
+
+        // Enterキーで検索
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('searchEmployeeCode');
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    searchRecords();
+                }
+            });
+        });
 
         function exportToExcel() {
             const records = JSON.parse(localStorage.getItem('tenkoboRecords') || '[]');
